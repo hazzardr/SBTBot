@@ -21,10 +21,11 @@ type ServeCommand struct {
 }
 type SyncCommand struct {
 	Token string `required:"true" help:"Discord bot token"`
+	DSN   string `required:"true" default:"data/sbtb.db" help:"database path"`
 }
 
 func (s *ServeCommand) Run() error {
-	b, err := discord.NewBot(s.Token)
+	b, err := discord.NewBot(s.Token, s.DSN)
 	if err != nil {
 		return fmt.Errorf("failed to create discord bot: %w", err)
 	}
@@ -41,7 +42,7 @@ func (s *ServeCommand) Run() error {
 }
 
 func (s *SyncCommand) Run() error {
-	b, err := discord.NewBot(s.Token)
+	b, err := discord.NewBot(s.Token, s.DSN)
 	if err != nil {
 		return fmt.Errorf("failed to create discord bot: %w", err)
 	}

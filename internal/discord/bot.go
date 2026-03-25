@@ -2,6 +2,7 @@ package discord
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/disgoorg/disgo"
@@ -11,6 +12,7 @@ import (
 	"github.com/disgoorg/disgo/handler"
 	"github.com/disgoorg/disgo/handler/middleware"
 	"github.com/disgoorg/snowflake/v2"
+	"github.com/hazzardr/sbtbot/internal/sbtb"
 )
 
 type SlashCommand struct {
@@ -24,11 +26,16 @@ var staticCommands = []SlashCommand{
 }
 
 type Bot struct {
+	db     *sbtb.DB
 	client *bot.Client
 }
 
-func NewBot(discordToken string) (*Bot, error) {
-	b := &Bot{}
+func NewBot(discordToken string, dbPath string) (*Bot, error) {
+	db, err := sbtb.NewDB(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create database: %w", err)
+	}
+	b := &Bot{db: db}
 	r := initializeEventListeners(b)
 
 	client, err := disgo.New(discordToken,
@@ -59,10 +66,7 @@ func initializeEventListeners(b *Bot) *handler.Mux {
 	for _, cmd := range staticCommands {
 		r.SlashCommand(cmd.Path, cmd.HandleFunc)
 	}
-
-	submitModalCMD := getLaunchSubmitModalCommand(b)
-	r.SlashCommand(submitModalCMD.Path, submitModalCMD.HandleFunc)
-
+	registerBookListeners(r, b)
 	return r
 }
 
@@ -85,7 +89,7 @@ func (b *Bot) SyncCommands() error {
 	for _, cmd := range staticCommands {
 		creates = append(creates, cmd.Metadata)
 	}
-	creates = append(creates, getLaunchSubmitModalCommand(b).Metadata)
+	creates = append(creates, bookCommands...)
 	err := handler.SyncCommands(b.client, creates, make([]snowflake.ID, 0))
 	return err
 }
