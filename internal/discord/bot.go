@@ -40,7 +40,7 @@ func NewBot(discordToken string) (*Bot, error) {
 				gateway.IntentDirectMessages,
 			),
 			gateway.WithPresenceOpts(
-				gateway.WithListeningActivity("Crunching the numbers..."),
+				gateway.WithListeningActivity("!"),
 				gateway.WithOnlineStatus(discord.OnlineStatusOnline),
 			),
 		),
