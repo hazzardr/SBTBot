@@ -32,5 +32,10 @@ func (b *Bot) launchSubmitModal(d discord.SlashCommandInteractionData, e *handle
 			discord.NewStringSelectMenuOption("Historical", "historical"),
 			discord.NewStringSelectMenuOption("Contemporary", "contemporary"),
 		).WithMinValues(1).WithMaxValues(1)),
+		discord.NewLabel("Theme", discord.NewStringSelectMenu("theme-select", "Theme...",
+			discord.NewStringSelectMenuOption("Theme 1", "theme-1"),
+			discord.NewStringSelectMenuOption("Theme 2", "theme-2"),
+			discord.NewStringSelectMenuOption("Theme 3", "theme-3"),
+		).WithMinValues(1).WithMaxValues(1)),
 	}))
 }
