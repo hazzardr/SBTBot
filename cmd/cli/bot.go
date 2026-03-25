@@ -17,7 +17,7 @@ type BotCommand struct {
 
 type ServeCommand struct {
 	Token string `required:"true" help:"Discord bot token"`
-	DSN   string `required:"true" default:"data/azdg.duckdb" help:"database path"`
+	DSN   string `required:"true" default:"data/sbtb.db" help:"database path"`
 }
 type SyncCommand struct {
 	Token string `required:"true" help:"Discord bot token"`

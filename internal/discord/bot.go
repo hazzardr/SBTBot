@@ -19,7 +19,7 @@ type SlashCommand struct {
 	HandleFunc handler.SlashCommandHandler
 }
 
-var commands = []SlashCommand{
+var staticCommands = []SlashCommand{
 	pingCommand,
 }
 
@@ -29,7 +29,7 @@ type Bot struct {
 
 func NewBot(discordToken string) (*Bot, error) {
 	b := &Bot{}
-	r := initializeEventListeners()
+	r := initializeEventListeners(b)
 
 	client, err := disgo.New(discordToken,
 		bot.WithGatewayConfigOpts(
@@ -53,6 +53,19 @@ func NewBot(discordToken string) (*Bot, error) {
 	return b, nil
 }
 
+func initializeEventListeners(b *Bot) *handler.Mux {
+	r := handler.New()
+	r.Use(middleware.Logger)
+	for _, cmd := range staticCommands {
+		r.SlashCommand(cmd.Path, cmd.HandleFunc)
+	}
+
+	submitModalCMD := getLaunchSubmitModalCommand(b)
+	r.SlashCommand(submitModalCMD.Path, submitModalCMD.HandleFunc)
+
+	return r
+}
+
 // Start starts the bot, initializing the discord client against the gateway.
 func (b *Bot) Start() error {
 	if err := b.client.OpenGateway(context.Background()); err != nil {
@@ -61,26 +74,18 @@ func (b *Bot) Start() error {
 	return nil
 }
 
-func (b *Bot) SyncCommands() error {
-	creates := make([]discord.ApplicationCommandCreate, len(commands))
-	for i, cmd := range commands {
-		creates[i] = cmd.Metadata
-	}
-	err := handler.SyncCommands(b.client, creates, make([]snowflake.ID, 0))
-	return err
-}
-
 func (b *Bot) GracefulShutdown(timeout time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	b.client.Close(ctx)
 }
 
-func initializeEventListeners() *handler.Mux {
-	r := handler.New()
-	r.Use(middleware.Logger)
-	for _, cmd := range commands {
-		r.SlashCommand(cmd.Path, cmd.HandleFunc)
+func (b *Bot) SyncCommands() error {
+	creates := make([]discord.ApplicationCommandCreate, 0)
+	for _, cmd := range staticCommands {
+		creates = append(creates, cmd.Metadata)
 	}
-	return r
+	creates = append(creates, getLaunchSubmitModalCommand(b).Metadata)
+	err := handler.SyncCommands(b.client, creates, make([]snowflake.ID, 0))
+	return err
 }
