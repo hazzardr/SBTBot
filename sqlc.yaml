@@ -1,0 +1,16 @@
+version: "2"
+sql:
+  - engine: "sqlite"
+    queries: "sql/query.sql"
+    schema: "sql/migrations"
+    gen:
+      go:
+        package: "generated"
+        out: "sbtb/generated"
+  - engine: "sqlite"
+    queries: "sql/writes.sql"
+    schema: "sql/migrations"
+    gen:
+      go:
+        package: "generated"
+        out: "sbtb/generated"
