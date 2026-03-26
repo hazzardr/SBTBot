@@ -39,14 +39,27 @@ func (b *Bot) launchSubmitModal(_ discord.SlashCommandInteractionData, e *handle
 		WithMinValues(1).
 		WithMaxValues(1)
 
+	var themeSelect discord.LabelSubComponent
+	themes, err := b.db.ListThemes(e.Ctx)
+	if err != nil {
+		return err
+	}
+	themeSelections := make([]discord.StringSelectMenuOption, len(themes))
+	for i, t := range themes {
+		opt := discord.NewStringSelectMenuOption(t.Name, strings.ToLower(t.Name))
+		if t.Description.Valid {
+			opt.Description = t.Description.String
+		}
+		themeSelections[i] = opt
+	}
+	themeSelect = discord.NewStringSelectMenu("theme-select", "Theme...", themeSelections...).
+		WithMinValues(1).
+		WithMaxValues(1)
+
 	return e.Modal(discord.NewModalCreate("book-idea-modal", "Submit a new book club idea!", []discord.LayoutComponent{
 		discord.NewLabel("Name", discord.NewShortTextInput("book-name")),
 		discord.NewLabel("Author", discord.NewShortTextInput("author-name")),
 		discord.NewLabel("Genre", genreSelect),
-		discord.NewLabel("Theme", discord.NewStringSelectMenu("theme-select", "Theme...",
-			discord.NewStringSelectMenuOption("Theme 1", "theme-1"),
-			discord.NewStringSelectMenuOption("Theme 2", "theme-2"),
-			discord.NewStringSelectMenuOption("Theme 3", "theme-3"),
-		).WithMinValues(1).WithMaxValues(1)),
+		discord.NewLabel("Theme", themeSelect),
 	}))
 }

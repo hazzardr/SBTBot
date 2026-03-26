@@ -7,6 +7,8 @@ import (
 	"log/slog"
 
 	"github.com/hazzardr/sbtbot/internal/generated"
+	// sqlite driver.
+	_ "modernc.org/sqlite"
 )
 
 type DB struct {
@@ -15,7 +17,7 @@ type DB struct {
 }
 
 func NewDB(path string) (*DB, error) {
-	db, err := sql.Open("sqlite3", path)
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -36,6 +38,14 @@ func (db *DB) AddGenre(ctx context.Context, name string) error {
 	if err != nil {
 		return fmt.Errorf("failed to add genre: %w", err)
 	}
-	slog.Info("added genre:", g.Name)
+	slog.InfoContext(ctx, "added", slog.String("genre", g.Name))
 	return nil
+}
+
+func (db *DB) ListThemes(ctx context.Context) ([]generated.Theme, error) {
+	themes, err := db.queries.ListThemes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve themes: %w", err)
+	}
+	return themes, nil
 }

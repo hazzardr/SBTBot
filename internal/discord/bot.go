@@ -3,6 +3,7 @@ package discord
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/disgoorg/disgo"
@@ -10,7 +11,6 @@ import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/gateway"
 	"github.com/disgoorg/disgo/handler"
-	"github.com/disgoorg/disgo/handler/middleware"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/hazzardr/sbtbot/internal/sbtb"
 )
@@ -62,7 +62,7 @@ func NewBot(discordToken string, dbPath string) (*Bot, error) {
 
 func initializeEventListeners(b *Bot) *handler.Mux {
 	r := handler.New()
-	r.Use(middleware.Logger)
+	r.Use(loggingMiddleware)
 	for _, cmd := range staticCommands {
 		r.SlashCommand(cmd.Path, cmd.HandleFunc)
 	}
@@ -92,4 +92,16 @@ func (b *Bot) SyncCommands() error {
 	creates = append(creates, bookCommands...)
 	err := handler.SyncCommands(b.client, creates, make([]snowflake.ID, 0))
 	return err
+}
+
+// Logger is a middleware that logs the interaction and its variables.
+var loggingMiddleware handler.Middleware = func(next handler.Handler) handler.Handler {
+	return func(event *handler.InteractionEvent) error {
+		slog.InfoContext(event.Ctx,
+			"handling interaction",
+			slog.String("interaction", fmt.Sprintf("%+v", event.Interaction)),
+			slog.Any("vars", event.Vars),
+		)
+		return next(event)
+	}
 }
