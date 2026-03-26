@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 
 	"github.com/hazzardr/sbtbot/internal/generated"
 )
@@ -28,4 +29,13 @@ func (db *DB) ListGenres(ctx context.Context) ([]generated.Genre, error) {
 		return nil, fmt.Errorf("failed to retrieve genres: %w", err)
 	}
 	return genres, nil
+}
+
+func (db *DB) AddGenre(ctx context.Context, name string) error {
+	g, err := db.queries.AddGenre(ctx, name)
+	if err != nil {
+		return fmt.Errorf("failed to add genre: %w", err)
+	}
+	slog.Info("added genre:", g.Name)
+	return nil
 }

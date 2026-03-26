@@ -7,6 +7,7 @@ package generated
 
 import (
 	"context"
+	"database/sql"
 )
 
 const addGenre = `-- name: AddGenre :one
@@ -25,12 +26,42 @@ func (q *Queries) AddGenre(ctx context.Context, name string) (Genre, error) {
 	return i, err
 }
 
+const addTheme = `-- name: AddTheme :one
+insert into themes(
+    name, description
+) VALUES (
+    ?, ?
+ )
+returning id, name, description
+`
+
+type AddThemeParams struct {
+	Name        string
+	Description sql.NullString
+}
+
+func (q *Queries) AddTheme(ctx context.Context, arg AddThemeParams) (Theme, error) {
+	row := q.db.QueryRowContext(ctx, addTheme, arg.Name, arg.Description)
+	var i Theme
+	err := row.Scan(&i.ID, &i.Name, &i.Description)
+	return i, err
+}
+
 const deleteGenre = `-- name: DeleteGenre :exec
 delete from genres where name = ?
 `
 
 func (q *Queries) DeleteGenre(ctx context.Context, name string) error {
 	_, err := q.db.ExecContext(ctx, deleteGenre, name)
+	return err
+}
+
+const deleteTheme = `-- name: DeleteTheme :exec
+delete from themes where name = ?
+`
+
+func (q *Queries) DeleteTheme(ctx context.Context, name string) error {
+	_, err := q.db.ExecContext(ctx, deleteTheme, name)
 	return err
 }
 
@@ -48,6 +79,33 @@ func (q *Queries) ListGenres(ctx context.Context) ([]Genre, error) {
 	for rows.Next() {
 		var i Genre
 		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listThemes = `-- name: ListThemes :many
+select id, name, description from themes
+`
+
+func (q *Queries) ListThemes(ctx context.Context) ([]Theme, error) {
+	rows, err := q.db.QueryContext(ctx, listThemes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Theme
+	for rows.Next() {
+		var i Theme
+		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
