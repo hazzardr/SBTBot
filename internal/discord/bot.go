@@ -67,6 +67,7 @@ func initializeEventListeners(b *Bot) *handler.Mux {
 		r.SlashCommand(cmd.Path, cmd.HandleFunc)
 	}
 	registerBookListeners(r, b)
+	registerAdminListeners(r, b)
 	return r
 }
 
@@ -90,6 +91,8 @@ func (b *Bot) SyncCommands() error {
 		creates = append(creates, cmd.Metadata)
 	}
 	creates = append(creates, bookCommands...)
+	creates = append(creates, adminCommands...)
+	slog.Info("syncing commands...", slog.String("commands", fmt.Sprintf("%+v", creates)))
 	err := handler.SyncCommands(b.client, creates, make([]snowflake.ID, 0))
 	return err
 }
