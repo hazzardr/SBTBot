@@ -1,10 +1,13 @@
 package discord
 
 import (
+	"context"
+	"fmt"
 	"strings"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/handler"
+	"github.com/hazzardr/sbtbot/internal/sbtb"
 )
 
 var bookClubModal = discord.SlashCommandCreate{
@@ -27,22 +30,51 @@ var bookCommands = []discord.ApplicationCommandCreate{
 }
 
 func (b *Bot) launchSubmitModal(_ discord.SlashCommandInteractionData, e *handler.CommandEvent) error {
-	genres, err := b.db.ListGenres(e.Ctx)
+	genreSelect, err := genreDropDown(e.Ctx, b.db)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to render genre component: %w", err)
+	}
+	themeSelect, err := themeDropDown(e.Ctx, b.db)
+	if err != nil {
+		return fmt.Errorf("failed to render theme component: %w", err)
+	}
+
+	return e.Modal(discord.NewModalCreate("book-idea-modal", "Submit a new book club idea!", []discord.LayoutComponent{
+		discord.NewLabel("Name", discord.NewShortTextInput("book-name")),
+		discord.NewLabel("Author", discord.NewShortTextInput("author-name")),
+		genreSelect,
+		themeSelect,
+	}))
+}
+
+func genreDropDown(ctx context.Context, db *sbtb.DB) (discord.LayoutComponent, error) {
+	var genreSelect discord.LabelSubComponent
+	genres, err := db.ListGenres(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(genres) == 0 {
+		return discord.NewTextDisplay("**No genres** created yet!"), nil
 	}
 	genreSelections := make([]discord.StringSelectMenuOption, len(genres))
 	for i, g := range genres {
-		genreSelections[i] = discord.NewStringSelectMenuOption(g.Name, strings.ToLower(g.Name))
+		opt := discord.NewStringSelectMenuOption(g.Name, strings.ToLower(g.Name))
+		genreSelections[i] = opt
 	}
-	genreSelect := discord.NewStringSelectMenu("genre-select", "Genre...", genreSelections...).
+	genreSelect = discord.NewStringSelectMenu("genre-select", "Genre...", genreSelections...).
 		WithMinValues(1).
 		WithMaxValues(1)
+	return discord.NewLabel("Genre", genreSelect), nil
+}
 
+func themeDropDown(ctx context.Context, db *sbtb.DB) (discord.LayoutComponent, error) {
 	var themeSelect discord.LabelSubComponent
-	themes, err := b.db.ListThemes(e.Ctx)
+	themes, err := db.ListThemes(ctx)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	if len(themes) == 0 {
+		return discord.NewTextDisplay("**No themes** created yet!"), nil
 	}
 	themeSelections := make([]discord.StringSelectMenuOption, len(themes))
 	for i, t := range themes {
@@ -55,11 +87,5 @@ func (b *Bot) launchSubmitModal(_ discord.SlashCommandInteractionData, e *handle
 	themeSelect = discord.NewStringSelectMenu("theme-select", "Theme...", themeSelections...).
 		WithMinValues(1).
 		WithMaxValues(1)
-
-	return e.Modal(discord.NewModalCreate("book-idea-modal", "Submit a new book club idea!", []discord.LayoutComponent{
-		discord.NewLabel("Name", discord.NewShortTextInput("book-name")),
-		discord.NewLabel("Author", discord.NewShortTextInput("author-name")),
-		discord.NewLabel("Genre", genreSelect),
-		discord.NewLabel("Theme", themeSelect),
-	}))
+	return discord.NewLabel("Theme", themeSelect), nil
 }
