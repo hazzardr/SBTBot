@@ -60,17 +60,6 @@ func NewBot(discordToken string, dbPath string) (*Bot, error) {
 	return b, nil
 }
 
-func initializeEventListeners(b *Bot) *handler.Mux {
-	r := handler.New()
-	r.Use(loggingMiddleware)
-	for _, cmd := range staticCommands {
-		r.SlashCommand(cmd.Path, cmd.HandleFunc)
-	}
-	registerBookListeners(r, b)
-	registerAdminListeners(r, b)
-	return r
-}
-
 // Start starts the bot, initializing the discord client against the gateway.
 func (b *Bot) Start() error {
 	if err := b.client.OpenGateway(context.Background()); err != nil {
@@ -91,10 +80,21 @@ func (b *Bot) SyncCommands() error {
 		creates = append(creates, cmd.Metadata)
 	}
 	creates = append(creates, bookCommands...)
-	creates = append(creates, adminCommands...)
+	creates = append(creates, genreCommands...)
 	slog.Info("syncing commands...", slog.String("commands", fmt.Sprintf("%+v", creates)))
 	err := handler.SyncCommands(b.client, creates, make([]snowflake.ID, 0))
 	return err
+}
+
+func initializeEventListeners(b *Bot) *handler.Mux {
+	r := handler.New()
+	r.Use(loggingMiddleware)
+	for _, cmd := range staticCommands {
+		r.SlashCommand(cmd.Path, cmd.HandleFunc)
+	}
+	registerBookListeners(r, b)
+	registerGenreListeners(r, b)
+	return r
 }
 
 // Logger is a middleware that logs the interaction and its variables.

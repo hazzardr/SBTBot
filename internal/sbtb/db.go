@@ -42,6 +42,15 @@ func (db *DB) AddGenre(ctx context.Context, name string) error {
 	return nil
 }
 
+func (db *DB) RemoveGenre(ctx context.Context, name string) error {
+	err := db.queries.DeleteGenre(ctx, name)
+	if err != nil {
+		return fmt.Errorf("failed to remove genre: %w", err)
+	}
+	slog.InfoContext(ctx, "removed", slog.String("genre", name))
+	return nil
+}
+
 func (db *DB) ListThemes(ctx context.Context) ([]generated.Theme, error) {
 	themes, err := db.queries.ListThemes(ctx)
 	if err != nil {
