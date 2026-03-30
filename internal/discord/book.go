@@ -3,6 +3,7 @@ package discord
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/disgoorg/disgo/discord"
@@ -23,6 +24,7 @@ var bookClubModal = discord.SlashCommandCreate{
 
 func registerBookListeners(h *handler.Mux, b *Bot) {
 	h.SlashCommand("/submit", b.launchSubmitModal)
+	h.Modal("/submit/submit-idea", b.submitBookIdea)
 }
 
 var bookCommands = []discord.ApplicationCommandCreate{
@@ -39,7 +41,7 @@ func (b *Bot) launchSubmitModal(_ discord.SlashCommandInteractionData, e *handle
 		return fmt.Errorf("failed to render theme component: %w", err)
 	}
 
-	return e.Modal(discord.NewModalCreate("book-idea-modal", "Submit a new book club idea!", []discord.LayoutComponent{
+	return e.Modal(discord.NewModalCreate("submit-idea", "Submit a new book club idea!", []discord.LayoutComponent{
 		discord.NewLabel("Name", discord.NewShortTextInput("book-name")),
 		discord.NewLabel("Author", discord.NewShortTextInput("author-name")),
 		genreSelect,
@@ -63,7 +65,8 @@ func genreDropDown(ctx context.Context, db *sbtb.DB) (discord.LayoutComponent, e
 	}
 	genreSelect = discord.NewStringSelectMenu("genre-select", "Genre...", genreSelections...).
 		WithMinValues(1).
-		WithMaxValues(1)
+		WithMaxValues(1).
+		WithRequired(true)
 	return discord.NewLabel("Genre", genreSelect), nil
 }
 
@@ -88,4 +91,9 @@ func themeDropDown(ctx context.Context, db *sbtb.DB) (discord.LayoutComponent, e
 		WithMinValues(1).
 		WithMaxValues(1)
 	return discord.NewLabel("Theme", themeSelect), nil
+}
+
+func (b *Bot) submitBookIdea(e *handler.ModalEvent) error {
+	slog.InfoContext(e.Ctx, "Submitting book idea")
+	return nil
 }

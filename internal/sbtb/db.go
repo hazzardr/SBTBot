@@ -58,3 +58,21 @@ func (db *DB) ListThemes(ctx context.Context) ([]generated.Theme, error) {
 	}
 	return themes, nil
 }
+
+func (db *DB) AddTheme(ctx context.Context, name string, desc string) error {
+	t, err := db.queries.AddTheme(ctx, generated.AddThemeParams{Name: name, Description: sql.NullString{String: desc, Valid: true}})
+	if err != nil {
+		return fmt.Errorf("failed to add theme: %w", err)
+	}
+	slog.InfoContext(ctx, "added", slog.String("theme", t.Name))
+	return nil
+}
+
+func (db *DB) RemoveTheme(ctx context.Context, name string) error {
+	err := db.queries.DeleteTheme(ctx, name)
+	if err != nil {
+		return fmt.Errorf("failed to remove theme: %w", err)
+	}
+	slog.InfoContext(ctx, "removed", slog.String("theme", name))
+	return nil
+}

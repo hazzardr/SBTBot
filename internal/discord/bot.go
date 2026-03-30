@@ -81,7 +81,12 @@ func (b *Bot) SyncCommands() error {
 	}
 	creates = append(creates, bookCommands...)
 	creates = append(creates, genreCommands...)
-	slog.Info("syncing commands...", slog.String("commands", fmt.Sprintf("%+v", creates)))
+	creates = append(creates, themeCommands...)
+	names := ""
+	for _, c := range creates {
+		names += c.CommandName() + ","
+	}
+	slog.Info("syncing commands...", slog.String("commands", names))
 	err := handler.SyncCommands(b.client, creates, make([]snowflake.ID, 0))
 	return err
 }
@@ -94,6 +99,7 @@ func initializeEventListeners(b *Bot) *handler.Mux {
 	}
 	registerBookListeners(r, b)
 	registerGenreListeners(r, b)
+	registerThemeListeners(r, b)
 	return r
 }
 
