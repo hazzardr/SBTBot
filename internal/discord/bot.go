@@ -82,11 +82,11 @@ func (b *Bot) SyncCommands() error {
 	creates = append(creates, bookCommands...)
 	creates = append(creates, genreCommands...)
 	creates = append(creates, themeCommands...)
-	names := ""
+	names := make([]string, 0, len(creates))
 	for _, c := range creates {
-		names += c.CommandName() + ","
+		names = append(names, c.CommandName())
 	}
-	slog.Info("syncing commands...", slog.String("commands", names))
+	slog.Info("syncing commands...", slog.Any("commands", names))
 	err := handler.SyncCommands(b.client, creates, make([]snowflake.ID, 0))
 	return err
 }

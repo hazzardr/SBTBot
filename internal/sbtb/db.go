@@ -60,7 +60,10 @@ func (db *DB) ListThemes(ctx context.Context) ([]generated.Theme, error) {
 }
 
 func (db *DB) AddTheme(ctx context.Context, name string, desc string) error {
-	t, err := db.queries.AddTheme(ctx, generated.AddThemeParams{Name: name, Description: sql.NullString{String: desc, Valid: true}})
+	t, err := db.queries.AddTheme(
+		ctx,
+		generated.AddThemeParams{Name: name, Description: sql.NullString{String: desc, Valid: true}},
+	)
 	if err != nil {
 		return fmt.Errorf("failed to add theme: %w", err)
 	}

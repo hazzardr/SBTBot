@@ -24,7 +24,7 @@ var bookClubModal = discord.SlashCommandCreate{
 
 func registerBookListeners(h *handler.Mux, b *Bot) {
 	h.SlashCommand("/submit", b.launchSubmitModal)
-	h.Modal("/submit/submit-idea", b.submitBookIdea)
+	h.Modal("/submit-idea", b.submitBookIdea)
 }
 
 var bookCommands = []discord.ApplicationCommandCreate{
@@ -41,7 +41,7 @@ func (b *Bot) launchSubmitModal(_ discord.SlashCommandInteractionData, e *handle
 		return fmt.Errorf("failed to render theme component: %w", err)
 	}
 
-	return e.Modal(discord.NewModalCreate("submit-idea", "Submit a new book club idea!", []discord.LayoutComponent{
+	return e.Modal(discord.NewModalCreate("/submit-idea", "Submit a new book club idea!", []discord.LayoutComponent{
 		discord.NewLabel("Name", discord.NewShortTextInput("book-name")),
 		discord.NewLabel("Author", discord.NewShortTextInput("author-name")),
 		genreSelect,
