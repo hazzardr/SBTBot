@@ -10,6 +10,45 @@ import (
 	"database/sql"
 )
 
+const addBookIdea = `-- name: AddBookIdea :one
+insert into book_ideas (title, author, submitter, theme_id, genre_id)
+values (
+   ?1,
+   ?2,
+   ?3,
+   (select t.id from themes t where t.name = ?4),
+   (select g.id from genres g where g.name = ?5)
+) RETURNING id, title, author, submitter, theme_id, genre_id
+`
+
+type AddBookIdeaParams struct {
+	Title     string
+	Author    string
+	Submitter string
+	ThemeName string
+	GenreName string
+}
+
+func (q *Queries) AddBookIdea(ctx context.Context, arg AddBookIdeaParams) (BookIdea, error) {
+	row := q.db.QueryRowContext(ctx, addBookIdea,
+		arg.Title,
+		arg.Author,
+		arg.Submitter,
+		arg.ThemeName,
+		arg.GenreName,
+	)
+	var i BookIdea
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Author,
+		&i.Submitter,
+		&i.ThemeID,
+		&i.GenreID,
+	)
+	return i, err
+}
+
 const addGenre = `-- name: AddGenre :one
 insert into genres(
     name
@@ -63,6 +102,18 @@ delete from themes where name = ?
 func (q *Queries) DeleteTheme(ctx context.Context, name string) error {
 	_, err := q.db.ExecContext(ctx, deleteTheme, name)
 	return err
+}
+
+const getGenreByName = `-- name: GetGenreByName :one
+select id, name from genres
+where name == ?
+`
+
+func (q *Queries) GetGenreByName(ctx context.Context, name string) (Genre, error) {
+	row := q.db.QueryRowContext(ctx, getGenreByName, name)
+	var i Genre
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
 }
 
 const listGenres = `-- name: ListGenres :many

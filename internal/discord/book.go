@@ -3,7 +3,6 @@ package discord
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/disgoorg/disgo/discord"
@@ -42,8 +41,8 @@ func (b *Bot) launchSubmitModal(_ discord.SlashCommandInteractionData, e *handle
 	}
 
 	return e.Modal(discord.NewModalCreate("/submit-idea", "Submit a new book club idea!", []discord.LayoutComponent{
-		discord.NewLabel("Name", discord.NewShortTextInput("book-name")),
-		discord.NewLabel("Author", discord.NewShortTextInput("author-name")),
+		discord.NewLabel("Name", discord.NewShortTextInput("title")),
+		discord.NewLabel("Author", discord.NewShortTextInput("author")),
 		genreSelect,
 		themeSelect,
 	}))
@@ -63,7 +62,7 @@ func genreDropDown(ctx context.Context, db *sbtb.DB) (discord.LayoutComponent, e
 		opt := discord.NewStringSelectMenuOption(g.Name, strings.ToLower(g.Name))
 		genreSelections[i] = opt
 	}
-	genreSelect = discord.NewStringSelectMenu("genre-select", "Genre...", genreSelections...).
+	genreSelect = discord.NewStringSelectMenu("genre", "Genre...", genreSelections...).
 		WithMinValues(1).
 		WithMaxValues(1).
 		WithRequired(true)
@@ -94,6 +93,48 @@ func themeDropDown(ctx context.Context, db *sbtb.DB) (discord.LayoutComponent, e
 }
 
 func (b *Bot) submitBookIdea(e *handler.ModalEvent) error {
-	slog.InfoContext(e.Ctx, "Submitting book idea")
-	return nil
+	title, ok := e.Data.TextInput("title")
+	if !ok {
+		return e.CreateMessage(discord.NewMessageCreate().
+			WithContent("Please enter a title!").
+			WithEphemeral(true),
+		)
+	}
+	author, ok := e.Data.TextInput("author")
+	if !ok {
+		return e.CreateMessage(discord.NewMessageCreate().
+			WithContent("Please enter an author!").
+			WithEphemeral(true),
+		)
+	}
+	genre, _ := e.Data.StringSelectMenu("genre")
+	var g string
+	if len(genre.Values) != 1 {
+		g = ""
+	} else {
+		g = genre.Values[0]
+	}
+	theme, _ := e.Data.StringSelectMenu("theme")
+	var t string
+	if len(theme.Values) != 1 {
+		t = ""
+	} else {
+		t = theme.Values[0]
+	}
+	submitter := e.User().Username
+	bi, err := b.db.AddBookIdea(
+		e.Ctx,
+		title.Value,
+		author.Value,
+		g,
+		t,
+		submitter,
+	)
+	if err != nil {
+		return err
+	}
+	return e.CreateMessage(discord.NewMessageCreate().
+		WithContent(fmt.Sprintf("Submitted book: %s. Thanks!", bi.Title)).
+		WithEphemeral(true),
+	)
 }

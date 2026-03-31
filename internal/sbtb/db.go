@@ -79,3 +79,30 @@ func (db *DB) RemoveTheme(ctx context.Context, name string) error {
 	slog.InfoContext(ctx, "removed", slog.String("theme", name))
 	return nil
 }
+
+// AddBookIdea adds a new book idea to the database.
+// This will set genre or theme as null if it doesn't match anything.
+func (db *DB) AddBookIdea(
+	ctx context.Context,
+	title string,
+	author string,
+	genre string,
+	theme string,
+	submitter string,
+) (generated.BookIdea, error) {
+	bi, err := db.queries.AddBookIdea(ctx, generated.AddBookIdeaParams{
+		Title:     title,
+		Author:    author,
+		Submitter: submitter,
+		ThemeName: theme,
+		GenreName: genre,
+	})
+	if err != nil {
+		return generated.BookIdea{}, fmt.Errorf("failed to add book idea: %w", err)
+	}
+	slog.InfoContext(ctx, "added",
+		slog.String("book", bi.Title),
+		slog.String("submitter", bi.Submitter),
+	)
+	return bi, nil
+}
