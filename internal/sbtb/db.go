@@ -1,0 +1,108 @@
+package sbtb
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"log/slog"
+
+	"github.com/hazzardr/sbtbot/internal/generated"
+	// sqlite driver.
+	_ "modernc.org/sqlite"
+)
+
+type DB struct {
+	path    string
+	queries *generated.Queries
+}
+
+func NewDB(path string) (*DB, error) {
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+	queries := generated.New(db)
+	return &DB{path: path, queries: queries}, nil
+}
+
+func (db *DB) ListGenres(ctx context.Context) ([]generated.Genre, error) {
+	genres, err := db.queries.ListGenres(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve genres: %w", err)
+	}
+	return genres, nil
+}
+
+func (db *DB) AddGenre(ctx context.Context, name string) error {
+	g, err := db.queries.AddGenre(ctx, name)
+	if err != nil {
+		return fmt.Errorf("failed to add genre: %w", err)
+	}
+	slog.InfoContext(ctx, "added", slog.String("genre", g.Name))
+	return nil
+}
+
+func (db *DB) RemoveGenre(ctx context.Context, name string) error {
+	err := db.queries.DeleteGenre(ctx, name)
+	if err != nil {
+		return fmt.Errorf("failed to remove genre: %w", err)
+	}
+	slog.InfoContext(ctx, "removed", slog.String("genre", name))
+	return nil
+}
+
+func (db *DB) ListThemes(ctx context.Context) ([]generated.Theme, error) {
+	themes, err := db.queries.ListThemes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve themes: %w", err)
+	}
+	return themes, nil
+}
+
+func (db *DB) AddTheme(ctx context.Context, name string, desc string) error {
+	t, err := db.queries.AddTheme(
+		ctx,
+		generated.AddThemeParams{Name: name, Description: sql.NullString{String: desc, Valid: true}},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to add theme: %w", err)
+	}
+	slog.InfoContext(ctx, "added", slog.String("theme", t.Name))
+	return nil
+}
+
+func (db *DB) RemoveTheme(ctx context.Context, name string) error {
+	err := db.queries.DeleteTheme(ctx, name)
+	if err != nil {
+		return fmt.Errorf("failed to remove theme: %w", err)
+	}
+	slog.InfoContext(ctx, "removed", slog.String("theme", name))
+	return nil
+}
+
+// AddBookIdea adds a new book idea to the database.
+// This will set genre or theme as null if it doesn't match anything.
+func (db *DB) AddBookIdea(
+	ctx context.Context,
+	title string,
+	author string,
+	genre string,
+	theme string,
+	submitter string,
+) (generated.BookIdea, error) {
+	bi, err := db.queries.AddBookIdea(ctx, generated.AddBookIdeaParams{
+		Title:     title,
+		Author:    author,
+		Submitter: submitter,
+		ThemeName: theme,
+		GenreName: genre,
+	})
+	if err != nil {
+		return generated.BookIdea{}, fmt.Errorf("failed to add book idea: %w", err)
+	}
+	slog.InfoContext(ctx, "added",
+		slog.String("book", bi.Title),
+		slog.String("submitter", bi.Submitter),
+	)
+	return bi, nil
+}

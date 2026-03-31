@@ -5,7 +5,7 @@ PROJECT_NAME := smart-bitches-trashy-bot
 EXEC_NAME := sbtbot
 SSH_USER := ansible
 DEPLOY_TARGET_IP := 100.100.77.57
-DB_URL := sqlite3:data/sbtbot.db
+DB_URL := data/sbtb.db
 
 .PHONY: help ## print this
 help:
@@ -57,11 +57,11 @@ generate:
 
 .PHONY: db/migration/status ## get the status of the db migrations
 db/migration/status:
-	goose duckdb $(DB_URL) -dir sql/migrations status
+	goose sqlite3 $(DB_URL) -dir sql/migrations status
 
 .PHONY: db/migrate ## run database migrations
 db/migrate:
-	goose duckdb $(DB_URL) -dir sql/migrations up
+	goose sqlite3 $(DB_URL) -dir sql/migrations up
 
 .PHONY: production/connect ## connects to production deployment server
 production/connect:
